@@ -884,7 +884,36 @@ class UrlDecoder extends EncodeDecoderBase implements SingletonInterface {
 	 * @return UrlCacheEntry|null
 	 */
 	protected function getFromUrlCache($speakingUrl) {
+		$speakingUrl = $this->removeExludedParametersFromUrl($speakingUrl);
 		return $this->cache->getUrlFromCacheBySpeakingUrl($this->rootPageId, $speakingUrl, $this->detectedLanguageId);
+	}
+
+	/**
+	 * remove all get parameters from url if they are listed as exclude
+	 * so getFromUrlCache is able to find the corresponding record
+	 *
+	 * @param $speakingUrl
+	 * @return string
+	 */
+	private function removeExludedParametersFromUrl($speakingUrl){
+		$cleanedUrl = $speakingUrl;
+		$splittedUrl = explode('?', $speakingUrl);
+		if(is_array($splittedUrl)) {
+			$getParams = explode('&',$splittedUrl[1]);
+			$excludeParams = \TYPO3\CMS\Core\Utility\GeneralUtility::trimExplode(',', $GLOBALS['TYPO3_CONF_VARS']['FE']['cHashExcludedParameters'], TRUE);
+			$tempParams = $getParams;
+			foreach ($excludeParams as $excludeParam) {
+				$i = 0;
+				foreach ($getParams as $getParam) {
+					if (strpos($getParam, $excludeParam) == 0) {
+						unset($tempParams[$i]);
+					}
+					$i++;
+				}
+			}
+			$cleanedUrl = $splittedUrl[0] . implode('&', $tempParams);
+		}
+		return $cleanedUrl;
 	}
 
 	/**
